@@ -5,7 +5,9 @@ from rest_framework.response import Response
 from .models import FlightRecord
 from .serializers import FlightRecordSerializer
 from .utils import update_google_sheet, authenticate_google_sheets
+import logging
 
+logger = logging.getLogger(__name__)
 
 def random_flight_number():
     # generate a random flight number based on current time (STA simulation)
@@ -268,26 +270,38 @@ def populate_dummy_data(request):
         traceback.print_exc()
         return Response({"status": "error", "message": str(e)}, status=500)
 
-@api_view(['POST'])
+@api_view(['POST', 'OPTIONS'])
 def trolley_login(request):
     """
     Simple login endpoint for trolley guys.
     Requires only employee_id.
     """
+    logger.info(f"Received trolley login request with method: {request.method}")
+    
+    # Handle preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        return Response(status=200)
+    
+    logger.info(f"Request data: {request.data}")
+    
+    # Get employee_id from request data
     employee_id = request.data.get("employee_id")
+    
+    logger.info(f"Extracted employee_id: {employee_id}")
     
     if not employee_id:
         return Response({"error": "Employee ID is required"}, status=400)
     
-    # In a real app, you would validate against a database
     # For demo, we'll just return success
-    return Response({
+    response_data = {
         "success": True,
         "user": {
             "employeeId": employee_id,
             "role": "trolley"
         }
-    })
+    }
+    logger.info(f"Sending response: {response_data}")
+    return Response(response_data)
 
 @api_view(['GET'])
 def flight_suggestions(request):
